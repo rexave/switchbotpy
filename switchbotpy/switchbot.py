@@ -20,11 +20,11 @@ import pygatt
 
 from switchbotpy.switchbot_timer import BaseTimer, delete_timer_cmd, parse_timer_cmd
 from switchbotpy.switchbot_util import (ActionStatus, SwitchbotError, handle_notification,
-                            notification_queue)
-
+                                        notification_queue)
 
 logging.basicConfig()
 LOG = logging.getLogger('switchbot')
+
 
 class Scanner(object):
     """ Switchbot Scanner class to scan for available switchbots (might require root privileges)"""
@@ -50,8 +50,8 @@ class Scanner(object):
                 if device['address'] in known_dict:
                     switchbots.append(device['address'])
             elif self._is_switchbot(mac=device['address']):
-                 # mac of device is unknown
-                 # -> check characteristics to know if device is a switchbot
+                # mac of device is unknown
+                # -> check characteristics to know if device is a switchbot
                 switchbots.append(device['address'])
 
         return switchbots
@@ -61,13 +61,15 @@ class Scanner(object):
             self.adapter.start()
             device = self.adapter.connect(mac, address_type=pygatt.BLEAddressType.random)
             characteristics = self.adapter.discover_characteristics(device)
+            LOG.info("Found %s -  %s", mac, characteristics)
             device.disconnect()
 
             uuid1 = UUID("{cba20002-224d-11e6-9fb8-0002a5d5c51b}")
             uuid2 = UUID("{cba20003-224d-11e6-9fb8-0002a5d5c51b}")
 
-            is_switchbot = uuid1 in characteristics.keys() and  uuid2 in characteristics.keys()
+            is_switchbot = uuid1 in characteristics.keys() and uuid2 in characteristics.keys()
         except pygatt.exceptions.NotConnectedError:
+            LOG.exception("Error")
             # e.g. if device uses different addressing
             is_switchbot = False
         finally:
@@ -118,7 +120,6 @@ class Bot(object):
         finally:
             self.adapter.stop()
 
-
     def switch(self, switch_on: bool):
         """Switch the state of the Switchbot in the dual state mode:
             (Extend arm or Retract arm)
@@ -137,7 +138,7 @@ class Bot(object):
 
             if switch_on:
                 cmd += b'\x01'
-            else: # off
+            else:  # off
                 cmd += b'\x02'
 
             value = self._write_cmd_and_wait_for_notification(handle=0x16, cmd=cmd)
@@ -145,7 +146,6 @@ class Bot(object):
 
         finally:
             self.adapter.stop()
-
 
     def set_hold_time(self, sec: int):
         """Set the hold time for the Switchbot in the standard mode (up to one minute)"""
@@ -224,7 +224,6 @@ class Bot(object):
         finally:
             self.adapter.stop()
 
-
     def set_timers(self, timers: List[BaseTimer]):
         """Configure multiple Switchbot timers."""
 
@@ -255,7 +254,6 @@ class Bot(object):
         finally:
             self.adapter.stop()
 
-
     def set_current_timestamp(self):
         """Sync the timestamps for the timers."""
 
@@ -283,7 +281,6 @@ class Bot(object):
 
         finally:
             self.adapter.stop()
-
 
     def set_mode(self, dual_state: bool, inverse: bool):
         """Change the switchbot mode:
@@ -442,7 +439,6 @@ class Bot(object):
         except pygatt.BLEError:
             LOG.exception("pygatt: failed to write cmd and wait for notification")
             raise SwitchbotError(message="communication with ble device failed")
-
 
         LOG.debug("handle: %s cmd: %s notification: %s",
                   str(hex(handle)), str(hexlify(cmd)), str(hexlify(value)))
